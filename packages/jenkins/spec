@@ -1,5 +1,5 @@
 ---
-name: jenkins_1.642.4
+name: jenkins
 
 dependencies: [] # no compile dependencies
 
