@@ -1,0 +1,6 @@
+---
+blobstore:
+  provider: local
+  options:
+    blobstore_path: /tmp/jenkins-blobs
+final_name: jenkins_blobstore
