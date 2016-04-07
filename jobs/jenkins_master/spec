@@ -6,7 +6,6 @@ name: jenkins_master
 # Using `bin` as the directory where these files go is a convention.
 templates:
   bin/jenkins_master_ctl: bin/jenkins_master_ctl
-  data/properties.sh.erb: data/properties.sh
   helpers/ctl_setup.sh: helpers/ctl_setup.sh
   helpers/ctl_utils.sh: helpers/ctl_utils.sh
 
@@ -16,7 +15,7 @@ packages:
 - jre
 
 
-properties
+properties:
   jenkins.admin.password:
     description: Admin user password
   jenkins.server.internal_http_port:
