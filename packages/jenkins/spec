@@ -1,0 +1,7 @@
+---
+name: jenkins_1.642.4
+
+dependencies: [] # no compile dependencies
+
+files:
+  - jenkins/jenkins-1.642.4.war

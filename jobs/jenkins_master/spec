@@ -1,0 +1,27 @@
+---
+name: jenkins_master
+
+# The file paths that you provide for templates are relative to the `/var/vcap/jobs/<job_name>` directory on the VM.
+# For example, `bin/ctl` becomes `/var/vcap/jobs/<job_name>/bin/ctl` on the job VM.
+# Using `bin` as the directory where these files go is a convention.
+templates:
+  bin/jenkins_master_ctl: bin/jenkins_master_ctl
+  data/properties.sh.erb: data/properties.sh
+  helpers/ctl_setup.sh: helpers/ctl_setup.sh
+  helpers/ctl_utils.sh: helpers/ctl_utils.sh
+
+# The packages on which this job depends on. Those packages are defined in the `packages/PACKAGE_NAME` folders.
+packages:
+- jenkins
+- jre
+
+
+properties
+  jenkins.admin.password:
+    description: Admin user password
+  jenkins.server.internal_http_port:
+    description: "Internal http port between nginx & jenkins"
+    default: 8088
+  jenkins.server.ajp13_port:
+    description: AJP13 protocol port
+    default: 8009

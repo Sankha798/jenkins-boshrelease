@@ -1,0 +1,13 @@
+## This script was taken from https://github.com/cloudfoundry-community/jenkins-boshrelease/blob/master/packages/jenkins/packaging
+## and modified by Michael Lihs for newer versions of Jenkins
+
+set -e   # exit immediately if a simple command exits with a non-zero status
+set -u   # report the usage of uninitialized variables
+
+# Available variables
+# $BOSH_COMPILE_TARGET - where this package & spec'd source files are available
+# $BOSH_INSTALL_TARGET - where you copy/install files to be included in package
+
+# TODO how can we make the jenkins version a "global" variable?
+# TODO right now it is spread over several places...
+cp jenkins/jenkins-1.642.4.war $BOSH_INSTALL_TARGET/jenkins.war
