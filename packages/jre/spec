@@ -1,4 +1,4 @@
 ---
-name: jre-8u77
+name: jre
 files:
   - jre/jre-8u77-linux-x64.tar.gz
