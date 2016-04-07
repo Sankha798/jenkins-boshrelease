@@ -3,6 +3,8 @@ Learning BOSH
 
 The full title of this project should be "Learning BOSH by building our own Jenkins BOSH Release". Part of the scripts are taken from the [Cloud Foundry Community Jenkins BOSH Release](https://github.com/cloudfoundry-community/jenkins-boshrelease).
 
+
+
 Basic Concepts of BOSH
 ----------------------
 
@@ -60,7 +62,9 @@ Deployment manifests are uploaded to the BOSH [Director](http://bosh.io/docs/bos
 
 The deployment manifest describes the deployment in an IaaS-agnostic way, which means it abstracts the differences between different IaaSes.
 
-Preperational Tasks
+
+
+Preparational Tasks
 -------------------
 
 ### Install BOSH-Lite
@@ -76,16 +80,20 @@ When connecting to the BOSH-Lite instance provided by the *Learning BOSH* tutori
     $ gem install bosh_cli
     $ bosh target 192.168.50.4
 
+
+
 Create a Release
 ----------------
 
 ### Directory Structure of a Release
 
     .
-    ├── blobs                                  # (temporary) source directory for files and binaries required by the release (second lookup)
-    ├── src                                    # (temporary) source directory for files and binaries required by the release (first lookup)
+    ├── blobs                                  # source directory for files and binaries required by the release (second lookup)
+    ├── src                                    # source directory for files and binaries required by the release (first lookup)
     ├── config
-    │   └── blobs.yml
+    │   ├── dev.yml                            # TODO find out what this file does
+    │   ├── final.yml                          # configures the blobstore to be used for our release
+    │   └── private.yml                        # configures paths and credentials for our blobstore
     ├── jobs                                   # contains a job for each application / service that is installed in the VM
     │   └── jenkins_master                     # sub directory for the job installing a Jenkins master
     │       ├── monit                          # monit script that configures how to watch the service(s)
@@ -99,7 +107,6 @@ Create a Release
     ├── packages                               # packages contain information about how to generate the binaries for the job
     │   └── jenkins
     │       ├── packaging
-    │       ├── pre_packaging                  # usage is NOT recommended
     │       └── spec                           # the spec file states: the package name, the package’s dependencies,
     │                                          #   the location where BOSH can find the binaries and other files that the package needs at compile time
     └── src
@@ -118,11 +125,16 @@ Add a file to `jobs/<job_name>/templates/bin`
 
 ### Make Dependency Graph
 
-(TODO) The tutorial now explains how to [make a dependency graph](http://bosh.io/docs/create-release.html#graph), but does not explain how to actually add any file or configuration that contains this graph.
+Within the jobs in our release, we can have two kinds of *dependencies*:
+
+1. *compile-time dependencies* that define that one package needs another package before it can be build (e.g. a library or a compiler)
+1. *runtime dependencies* that define that one job depends on another package at runtime
+
+We have to find out the compile-time and runtime dependencies for our release. Those dependencies will then be configure within the `dependencies` array in our `package/PACKAGE_NAME/spec` files.
 
 ### Create Package Skeletons
 
-Here it says, we have to make packages starting "from the bottom of the dependency graph" - which means we "only" need the dependency graph made in the previous section in order to bring the packages into the right order here.
+Here it says, we have to make packages starting "from the bottom of the dependency graph".
 
     bosh generate package <package_name>
 
@@ -132,7 +144,84 @@ To maximize portability of your release across different versions of stemcells, 
 
 ### Download Required Files and Binaries
 
-The files given in the `files` block within the `spec` of your package need to be stored into the `blob/src` directory of your release.
+The files given in the `files` block within the `spec` of your package need to be stored into the `blobs` or `src` (`src` has precedence) directory of your release.
+
+### Write Packaging Scripts
+
+At compile time, BOSH takes the source files referenced in the package specs, and renders them into the executable binaries and scripts that your deployed jobs need.
+
+Within `packages/PACKAGE_NAME/packaging` we have to write a shell scripts that do this job for us.
+
+### Blobstores
+
+The files of your release are likely to be put into version control. For larger binary files (e.g. the java `.tar` archive) this is not a good solution. Hence BOSH allows you to configure so called *Blobstores*. Here you have two choices:
+
+* for development releases use local copies of blobs
+* for final releases upload blobs to blobstores (e.g. Amazon S3) and direct BOSH to obtain blobs from there
+
+You configure the blobstore in the `config` directory
+
+* the `final.yml` names the blobstore and declares its type (e.g. `local`)
+* the `private.yml` specifies the blobstore path along with credentials
+
+So for local development, we use this `final.yml`
+
+    ---
+    blobstore:
+      provider: local
+      options:
+        blobstore_path: /tmp/jenkins-blobs
+    final_name: jenkins_blobstore
+
+along with this `private.yml`
+
+    ---
+    blobstore_secret: 'does-not-matter'
+    blobstore:
+      local:
+        blobstore_path: /tmp/ardo-blobs
+
+### Add Blobs
+
+Run the command
+
+    bosh add blob <path_to_blob_on_local_system> <package_name>
+
+(TODO) currently I am not sure what this command does and where the blobs are stored after they've been added.
+
+
+
+Using this Release
+------------------
+
+If you want to use this release, make sure to have [BOSH Lite](https://github.com/cloudfoundry/bosh-lite) on your system. See "Preparational Tasks" above.
+
+### Connect BOSH CLI to BOSH Lite
+
+    bosh target 192.168.50.4
+
+### Create the BOSH Release
+
+Clone this repository with
+
+    git clone https https://github.com/michaellihs/jenkins-boshrelease.git
+    cd jenkins-boshrelease
+
+Create the BOSH release with
+
+    bosh create release --force
+
+Upload the release to the BOSH Director now
+
+    bosh upload release
+
+Read the Director UUID with
+
+    bosh status --uuid
+
+Set the deployment manifest with
+
+
 
 
 Useful Tips & Tricks
@@ -163,12 +252,14 @@ The `download.rb` scripts downloads all (binary) dependencies required for the r
 Usage: `ruby helpers/download.rb` from within the repository root.
 
 
+
 Mac Helpers
 -----------
 
 ### md5sum
 
 Install `md5sum` on the Mac with `brew install md5sha1sum`
+
 
 
 Further Resources
