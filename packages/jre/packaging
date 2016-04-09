@@ -4,7 +4,7 @@
 # abort script on any command that exits with a non zero value
 set -e -x
 
-if [[ `uname -a` =~ "x64" ]] ; then
+if [[ `uname -a` =~ "x86_64" ]] ; then
   # TODO how can we make the JRE version a "global variable"
   # TODO right now it is spread over several places
   archive="jre/jre-8u77-linux-x64.tar.gz"
@@ -23,6 +23,9 @@ fi
 
 echo "Extracting archive..."
 tar xzf $archive
+
+# Added by Michael Lihs - most likely missing in the original packaging file...
+cd jre1.8.0_77
 
 if [[ -d bin && `bin/java -version 2>&1` =~ "Java HotSpot" && $? == 0 ]]; then
   cp -a * ${BOSH_INSTALL_TARGET}
