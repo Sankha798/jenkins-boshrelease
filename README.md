@@ -5,6 +5,13 @@ The full title of this project should be "Learning BOSH by building our own Jenk
 
 
 
+TLDR;
+-----
+
+(TODO) Provide minimum necessary steps to use this release!
+
+
+
 Basic Concepts of BOSH
 ----------------------
 
@@ -89,11 +96,13 @@ Create a Release
 
     .
     ├── blobs                                  # source directory for files and binaries required by the release (second lookup)
-    ├── src                                    # source directory for files and binaries required by the release (first lookup)
     ├── config
     │   ├── dev.yml                            # TODO find out what this file does
     │   ├── final.yml                          # configures the blobstore to be used for our release
     │   └── private.yml                        # configures paths and credentials for our blobstore
+    ├── dev_releases                           # TODO find out what this directory contains
+    ├── helpers                                # collection of helper scripts to maintain this release
+    │   └── download.rb                        # downloads all binaries required for this release
     ├── jobs                                   # contains a job for each application / service that is installed in the VM
     │   └── jenkins_master                     # sub directory for the job installing a Jenkins master
     │       ├── monit                          # monit script that configures how to watch the service(s)
@@ -109,7 +118,7 @@ Create a Release
     │       ├── packaging
     │       └── spec                           # the spec file states: the package name, the package’s dependencies,
     │                                          #   the location where BOSH can find the binaries and other files that the package needs at compile time
-    └── src
+    └── src                                    # source directory for files and binaries required by the release (first lookup)
 
 ### Create Release Directory
 
@@ -215,17 +224,119 @@ Upload the release to the BOSH Director now
 
     bosh upload release
 
+For debugging: in case you want to delete a previously uploaded release, use `bosh delete release <release_name>`
+
 Read the Director UUID with
 
     bosh status --uuid
 
-Set the deployment manifest with
+We need to create a `manifest.yml` - for further details about this file refer to the [documentation](http://bosh.io/docs/deployment-manifest.html).
 
+Set the deployment manifest via
+
+    bosh deployment manifest.yml
+
+Download the Stemcell and upload it to the BOSH Director (does not work in BCN, need to download in the browser with extended internet access)
+
+    wget --content-disposition https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent
+    (TODO) add command to upload the stemcell
+    bosh upload stemcell ...
+
+Deploy release
+
+    bosh deploy
+
+See list of deployed vms
+
+    bosh vms
+
+you should now see something like
+
+    ...
+    +---------------------------------------------------------+---------+-----+---------+------------+
+    | VM                                                      | State   | AZ  | VM Type | IPs        |
+    +---------------------------------------------------------+---------+-----+---------+------------+
+    | jenkins_master/0 (a30c5f23-e2df-4b93-b570-717f299d04e5) | failing | n/a | warden  | 10.245.0.2 |
+    +---------------------------------------------------------+---------+-----+---------+------------+
+    ...
+
+### Access Jenkins in your Browser
+
+Add a route to the BOSH Lite network
+
+    sudo route add -net 10.245.0.0/19 192.168.50.4
+
+Open the following URL in your browser: [http://10.245.0.2:8088](http://10.245.0.2:8088)
+
+### Re-build Release (for Debugging)
+
+If something goes wrong and you want to change things in your release, re-build and re-deploy with the following commands:
+
+    bosh delete deployment jenkins_master
+    bosh delete release jenkins-release-dev
+    bosh create release --force
+    bosh upload release
+    bosh deploy
 
 
 
 Useful Tips & Tricks
 ====================
+
+BOSH Commands
+-------------
+
+* delete a deployment
+
+    bosh delete deployment <DEPLOYMENT_NAME>
+
+* delete a release
+
+    bosh delete release <RELEASE_NAME>
+
+
+
+Debugging
+---------
+
+For debugging, what's going on in a container (e.g. during packaging), do the following
+
+* put a `sleep 100000` just before the line in the packaging script that throws an error
+* run `bosh deploy`
+* you'll get a list of running VMs with `bosh vms`:
+
+    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
+    | VM                                                                                        | State   | AZ  | VM Type | IPs        |
+    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
+    | compilation-16bb6e05-9af0-4264-937d-64c59e239071/0 (26cd91a9-5ecc-4dfd-8b6e-93172305dab9) | running | n/a |         | 10.245.0.3 |
+    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
+
+* now ssh into the BOSH Lite Vagrant Box with `vagrant ssh` from the directory with the BOSH Lite Vagrantfile
+* run `ssh vcap@<IP FROM THE TABLE ABOVE>`
+* password is `c1oudc0w`
+* cd into `/var/vcap` and poke around...
+* inside the container you again have to run `sudo su -` to become root (and see all the artifacts for compilation etc.)
+* compilation artifacts reside in `/var/vcap/data/compile`
+* you can test packaging scripts via `bash <PACKAGE_SCRIPT>`
+
+
+
+Failed: ... is not running after update
+---------------------------------------
+
+This error message can be shown after `bosh deploy`. In order to debug it, do the following:
+
+* use `bosh vms` to get a list of VMs and see which IPs they have - remember the IP of the VM you want to debug
+* use `vagrant ssh` to ssh into BOSH Lite
+* use `ssh vcap@<IP of VM>` with password `c1oudc0w` to ssh into the container
+* become root via `sudo su -`
+* check the following files / directories for log messages:
+
+````
+/var/vcap/sys/log           # and all files below
+/var/vcap/monit/monit.log
+````
+
 
 Directory and Folder Structure
 ------------------------------
@@ -262,6 +373,15 @@ Install `md5sum` on the Mac with `brew install md5sha1sum`
 
 
 
+Open Issues / TODOs
+===================
+
+* Add persistent disks for Jenkins configurations and builds
+* Add script that installs a defined list of Jenkins plugins
+* For some strange reason we need to `chown` the directories with the packages in the VM after deployment (in the ctl scripts) because the files are owned by root
+
+
+
 Further Resources
 =================
 
@@ -270,3 +390,4 @@ Further Resources
 * [Learning BOSH Tutorial](http://mariash.github.io/learn-bosh)
 * [Advanced Troubleshooting with the BOSH CLI](https://docs.pivotal.io/pivotalcf/customizing/trouble-advanced.html)
 * [Cloud Foundry Community Jenkins BOSH Release](https://github.com/cloudfoundry-community/jenkins-boshrelease)
+* [Troubleshooting Cloud Foundry](https://docs.cloudfoundry.org/running/troubleshooting.html)
