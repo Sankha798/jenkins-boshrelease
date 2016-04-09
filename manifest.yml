@@ -1,40 +1,57 @@
 # This is a simple deployment example for bosh-lite.
 #
-# Upload Jenkins release:
-#
-#     $ bosh upload release releases/jenkins-1.yml
-#
-# Target this deployment file:
-#
-#     $ bosh deployment examples/try_me.yml
-#
-# Then apply the desired template:
-#
-#     $ bosh diff templates/v1/warden_deployment_file.yml.erb # for bosh-lite/warden
-#
-# Then deploy:
-#
-#     $ bosh deploy
-#
-# For bosh-lite/warden: Now visit http://10.244.1.2/ in your browser.
+# Check README for further instructions for deployment
 
 ---
-name: jenkins
+name: jenkins_master
 director_uuid: <%= `bosh status | grep UUID | awk '{print $2}'` %>
 
 releases:
-- name: learn-bosh
+- name: jenkins-release-dev
   version: latest
 
 networks:
 - name: default
   subnets:
-  - range: 10.244.0.0/28
-    reserved: [10.244.0.1]
-    static: [10.244.0.2,10.244.0.6,10.244.0.10]
+  - range: 10.245.0.0/28
+    reserved: [10.245.0.1]
+    static: [10.245.0.2,10.245.0.6,10.245.0.10]
     cloud_properties:
       name: random
 
+compilation:
+  workers: 2
+  network: default
+  cloud_properties: {}
+
+update:
+  canaries: 1
+  canary_watch_time: 60000
+  update_watch_time: 60000
+  max_in_flight: 2
+
 properties:
   jenkins:
-    password: jEnKins
+    admin:
+      password: jEnKins
+
+resource_pools:
+- name: warden
+  network: default
+  size: 1
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: latest
+  cloud_properties: {}
+
+jobs:
+- name: jenkins_master
+  templates:
+  - name: jenkins_master
+  instances: 1
+  resource_pool: warden
+  networks:
+  - name: default
+    static_ips:
+    - 10.245.0.2
+  properties: {}
