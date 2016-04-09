@@ -89,15 +89,15 @@ When connecting to the BOSH-Lite instance provided by the *Learning BOSH* tutori
 
 
 
-Create a Release
-----------------
+Create this Release
+-------------------
 
-### Directory Structure of a Release
+### Directory Structure of this Release
 
     .
     ├── blobs                                  # source directory for files and binaries required by the release (second lookup)
     ├── config
-    │   ├── dev.yml                            # TODO find out what this file does
+    │   ├── dev.yml                            # created for local development once release is created with `bosh create release`
     │   ├── final.yml                          # configures the blobstore to be used for our release
     │   └── private.yml                        # configures paths and credentials for our blobstore
     ├── dev_releases                           # TODO find out what this directory contains
@@ -216,6 +216,10 @@ Clone this repository with
     git clone https https://github.com/michaellihs/jenkins-boshrelease.git
     cd jenkins-boshrelease
 
+Download all required binaries with
+
+    ruby helpers/download.rb
+
 Create the BOSH release with
 
     bosh create release --force
@@ -305,11 +309,11 @@ For debugging, what's going on in a container (e.g. during packaging), do the fo
 * run `bosh deploy`
 * you'll get a list of running VMs with `bosh vms`:
 
-    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
-    | VM                                                                                        | State   | AZ  | VM Type | IPs        |
-    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
-    | compilation-16bb6e05-9af0-4264-937d-64c59e239071/0 (26cd91a9-5ecc-4dfd-8b6e-93172305dab9) | running | n/a |         | 10.245.0.3 |
-    +-------------------------------------------------------------------------------------------+---------+-----+---------+------------+
+    +---------------------------------------------------------+---------+-----+---------+------------+
+    | VM                                                      | State   | AZ  | VM Type | IPs        |
+    +---------------------------------------------------------+---------+-----+---------+------------+
+    | jenkins_master/0 (b6440eef-f53d-4d72-848c-4558de95a063) | running | n/a | warden  | 10.245.0.2 |
+    +---------------------------------------------------------+---------+-----+---------+------------+
 
 * now ssh into the BOSH Lite Vagrant Box with `vagrant ssh` from the directory with the BOSH Lite Vagrantfile
 * run `ssh vcap@<IP FROM THE TABLE ABOVE>`
