@@ -32,48 +32,49 @@ export HOME=${HOME:-/home/vcap}
 # Add all packages' /bin & /sbin into $PATH
 for package_bin_dir in $(ls -d /var/vcap/packages/*/*bin)
 do
-    export PATH=${package_bin_dir}:$PATH
-  done
-
-  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-''} # default to empty
-  for package_bin_dir in $(ls -d /var/vcap/packages/*/lib)
-  do
-      export LD_LIBRARY_PATH=${package_bin_dir}:$LD_LIBRARY_PATH
-    done
-
-    # Setup log, run and tmp folders
-
-    export RUN_DIR=/var/vcap/sys/run/$JOB_NAME
-    export LOG_DIR=/var/vcap/sys/log/$JOB_NAME
-    export TMP_DIR=/var/vcap/sys/tmp/$JOB_NAME
-    export STORE_DIR=/var/vcap/store/$JOB_NAME
-    for dir in $RUN_DIR $LOG_DIR $TMP_DIR $STORE_DIR
-    do
-        mkdir -p ${dir}
-          chown vcap:vcap ${dir}
-            chmod 775 ${dir}
-          done
-          export TMPDIR=$TMP_DIR
-
-          export C_INCLUDE_PATH=/var/vcap/packages/mysqlclient/include/mysql:/var/vcap/packages/sqlite/include:/var/vcap/packages/libpq/include
-          export LIBRARY_PATH=/var/vcap/packages/mysqlclient/lib/mysql:/var/vcap/packages/sqlite/lib:/var/vcap/packages/libpq/lib
-
-          # consistent place for vendoring python libraries within package
-          if [[ -d ${WEBAPP_DIR:-/xxxx}  ]]
-          then
-              export PYTHONPATH=$WEBAPP_DIR/vendor/lib/python
-            fi
-
-            if [[ -d /var/vcap/packages/jre  ]]
-            then
-                export JAVA_HOME="/var/vcap/packages/jre"
-              fi
-
-              export PIDFILE=$RUN_DIR/$JOB_NAME.pid
-
-              echo '$PATH' $PATH
-            fi
-          fi
-    done
-  done
+  export PATH=${package_bin_dir}:$PATH
 done
+
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-''} # default to empty
+for package_bin_dir in $(ls -d /var/vcap/packages/*/lib)
+do
+  export LD_LIBRARY_PATH=${package_bin_dir}:$LD_LIBRARY_PATH
+done
+
+# Setup log, run and tmp folders
+
+export RUN_DIR=/var/vcap/sys/run/$JOB_NAME
+export LOG_DIR=/var/vcap/sys/log/$JOB_NAME
+export TMP_DIR=/var/vcap/sys/tmp/$JOB_NAME
+export STORE_DIR=/var/vcap/store/$JOB_NAME
+for dir in $RUN_DIR $LOG_DIR $TMP_DIR $STORE_DIR
+do
+  mkdir -p ${dir}
+  chown vcap:vcap ${dir}
+  chmod 775 ${dir}
+done
+
+# TODO added by Michael Lihs to fix permission problems
+# TODO maybe this should be added to the packaging script(s)
+chown -R vcap:vcap /var/vcap/packages
+chown -R vcap:vcap /var/vcap/data/packages
+
+export TMPDIR=$TMP_DIR
+
+export C_INCLUDE_PATH=/var/vcap/packages/mysqlclient/include/mysql:/var/vcap/packages/sqlite/include:/var/vcap/packages/libpq/include
+export LIBRARY_PATH=/var/vcap/packages/mysqlclient/lib/mysql:/var/vcap/packages/sqlite/lib:/var/vcap/packages/libpq/lib
+
+# consistent place for vendoring python libraries within package
+if [[ -d ${WEBAPP_DIR:-/xxxx} ]]
+then
+  export PYTHONPATH=$WEBAPP_DIR/vendor/lib/python
+fi
+
+if [[ -d /var/vcap/packages/jre ]]
+then
+  export JAVA_HOME="/var/vcap/packages/jre"
+fi
+
+export PIDFILE=$RUN_DIR/$JOB_NAME.pid
+
+echo '$PATH' $PATH
