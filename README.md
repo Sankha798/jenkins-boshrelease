@@ -69,6 +69,14 @@ Deployment manifests are uploaded to the BOSH [Director](http://bosh.io/docs/bos
 
 The deployment manifest describes the deployment in an IaaS-agnostic way, which means it abstracts the differences between different IaaSes.
 
+### What is a Job?
+
+(TODO) Describe the concept of a *Job* in BOSH
+
+### What is a Package?
+
+(TODO) Describe the concept of a *Package* in BOSH
+
 
 
 Preparational Tasks
@@ -76,21 +84,24 @@ Preparational Tasks
 
 ### Prerequisites
 
-* Install Ruby (for helper scripts)
-* Install VirtualBox
-* Install Vagrant
+* Install Ruby (only if you want to use the helper scripts)
+* Install [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+* Install [Vagrant](https://www.vagrantup.com/downloads.html)
 
 ### Install BOSH-Lite
-
-When connecting to the BOSH-Lite instance provided by the *Learning BOSH* tutorial, the credentials will be `admin/admin`
 
     $ vagrant init cloudfoundry/bosh-lite
     $ vagrant up --provider=virtualbox
     Bringing machine 'default' up with 'virtualbox' provider...
 
+When connecting to BOSH Lite, the credentials will be `admin/admin`.
+
 ### Install BOSH CLI
 
     $ gem install bosh_cli
+
+    # find out proper IP by ssh-ing into the BOSH Lite Vagrant Box
+    # and running `ipconfig`
     $ bosh target 192.168.50.4
 
 
@@ -138,6 +149,13 @@ Create this Release
 
 Add a file to `jobs/<job_name>/templates/bin`
 
+### Create Monit Scripts
+
+(TODO) describe how to create the Monit scripts for
+
+* starting / stopping a job (see `jobs/jenkins_master/monit`)
+* Monit debugger (see `jobs/jenkins_master/templates/bin/monit_debugger`)
+
 ### Make Dependency Graph
 
 Within the jobs in our release, we can have two kinds of *dependencies*:
@@ -145,7 +163,10 @@ Within the jobs in our release, we can have two kinds of *dependencies*:
 1. *compile-time dependencies* that define that one package needs another package before it can be build (e.g. a library or a compiler)
 1. *runtime dependencies* that define that one job depends on another package at runtime
 
-We have to find out the compile-time and runtime dependencies for our release. Those dependencies will then be configure within the `dependencies` array in our `package/PACKAGE_NAME/spec` files.
+We have to find out the compile-time and runtime dependencies for our release.
+
+* The compile time dependencies will then be configure within the `dependencies` array in our `package/PACKAGE_NAME/spec` files.
+* (TODO) find out what happens to the runtime dependencies
 
 ### Create Package Skeletons
 
@@ -159,13 +180,13 @@ To maximize portability of your release across different versions of stemcells, 
 
 ### Download Required Files and Binaries
 
-The files given in the `files` block within the `spec` of your package need to be stored into the `blobs` or `src` (`src` has precedence) directory of your release.
+The files given in the `files` block within the `spec` of your package need to be stored into the `blobs` or `src` directory of your release (`src` has precedence).
 
 ### Write Packaging Scripts
 
 At compile time, BOSH takes the source files referenced in the package specs, and renders them into the executable binaries and scripts that your deployed jobs need.
 
-Within `packages/PACKAGE_NAME/packaging` we have to write a shell scripts that do this job for us.
+Within `packages/PACKAGE_NAME/packaging` we have to write a shell script that does this job for us.
 
 ### Blobstores
 
@@ -293,16 +314,98 @@ If something goes wrong and you want to change things in your release, re-build 
 Useful Tips & Tricks
 ====================
 
+Directory Structure of our Deployment
+-------------------------------------
+
+Here's the directory structure of `/var/vcap/` within our VM / Container:
+
+    .
+    ├── bosh                                               # Files for Bosh
+    │   └── ...
+    ├── data
+    │   ├── jobs                                           # Jobs provided by the release
+    │   │   └── jenkins_master                             # our Jenkins Master job
+    │   │       └── 681cb1c1384bb44366ed0450b6b516311ea36417-a566126ea553ef93e86d06da77e98c100535e753
+    │   │           ├── bin
+    │   │           │   ├── jenkins_master_ctl
+    │   │           │   └── monit_debugger
+    │   │           ├── data
+    │   │           │   └── properties.sh
+    │   │           ├── helpers
+    │   │           │   ├── ctl_setup.sh
+    │   │           │   └── ctl_utils.sh
+    │   │           ├── monit
+    │   │           └── packages
+    │   │               ├── jenkins -> /var/vcap/data/packages/jenkins/4ec03b2b4874a7237d3018ff4487f768b05faaf4.1-3ffada8c3482669e1ba895493385d0a89dbd9ab6
+    │   │               └── jre -> /var/vcap/data/packages/jre/8c7b325b5348040cb5099053eedc30f80cc21344.1-077ea3b01cf643111e063fb2e321bc95ea17761a
+    │   ├── packages
+    │   │   ├── jenkins
+    │   │   │   └── 4ec03b2b4874a7237d3018ff4487f768b05faaf4.1-3ffada8c3482669e1ba895493385d0a89dbd9ab6
+    │   │   │       └── jenkins.war                        # contents of the Jenkins package (unzipped, only one file)
+    │   │   └── jre
+    │   │       └── 8c7b325b5348040cb5099053eedc30f80cc21344.1-077ea3b01cf643111e063fb2e321bc95ea17761a
+    │   │           └── ...                                # contents of the JRE package (unzipped)
+    │   ├── sys
+    │   │   ├── log
+    │   │   │   ├── jenkins_master                         # log files of Jenkins Master
+    │   │   │   │   ├── jenkins_master.stderr.log
+    │   │   │   │   └── jenkins_master.stdout.log
+    │   │   │   └── monit                                  # Monit logfiles (logs for single jobs / services)
+    │   │   │       ├── jenkins_master.err.log             # ...all log files here seem to be empty...
+    │   │   │       ├── jenkins_master.log
+    │   │   │       └── monit_debugger.jenkins_master_ctl.log
+    │   │   ├── run                                        # pid directories for jobs provided by the release
+    │   │   │   └── jenkins_master
+    │   │   │       └── jenkins_master.pid
+    │   │   └── tmp                                        # (TODO) why 2 tmp dirs?
+    │   │       └── jenkins_master
+    │   │           ├── jetty-0.0.0.0-8088-war--any-
+    │   │           ├── jffi9055966690314398396.tmp
+    │   │           ├── jna-3613596
+    │   │           └── winstone5650287427284240768.jar
+    │   └── tmp                                            # (TODO) why 2 tmp dirs?
+    ├── jobs
+    │   └── jenkins_master -> /var/vcap/data/jobs/jenkins_master/681cb1c1384bb44366ed0450b6b516311ea36417-a566126ea553ef93e86d06da77e98c100535e753
+    ├── micro
+    │   └── apply_spec.json                                # (TODO) what is this file for?
+    ├── micro_bosh                                         # (TODO) what does this directory do?
+    │   └── data
+    │       └── cache
+    │           └── ...
+    ├── monit
+    │   ├── alerts.monitrc
+    │   ├── empty.monitrc
+    │   ├── events
+    │   ├── job
+    │   │   └── 0000_jenkins_master.monitrc
+    │   ├── monit.log                                      # Monit log file (for all Monit jobs)
+    │   ├── monit.user
+    │   └── svlog
+    │       ├── current
+    │       └── lock
+    ├── packages
+    │   ├── jenkins -> /var/vcap/data/packages/jenkins/4ec03b2b4874a7237d3018ff4487f768b05faaf4.1-3ffada8c3482669e1ba895493385d0a89dbd9ab6
+    │   └── jre -> /var/vcap/data/packages/jre/8c7b325b5348040cb5099053eedc30f80cc21344.1-077ea3b01cf643111e063fb2e321bc95ea17761a
+    ├── store                                              # persistent disk of the VM / container
+    │   └── jenkins_master                                 # working directory of jenkins
+    │       └── ...
+    └── sys -> /var/vcap/data/sys
+
+
 BOSH Commands
 -------------
 
 * delete a deployment
 
-    bosh delete deployment <DEPLOYMENT_NAME>
+````
+bosh delete deployment <DEPLOYMENT_NAME>
+````
 
 * delete a release
 
-    bosh delete release <RELEASE_NAME>
+````
+bosh delete release <RELEASE_NAME>
+````
 
 
 
