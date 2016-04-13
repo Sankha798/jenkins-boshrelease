@@ -493,7 +493,11 @@ Open Issues / TODOs
 
 * Add persistent disks for Jenkins configurations and builds
 * Add script that installs a defined list of Jenkins plugins
+* Add further tools that ship with the community Jenkins release (Git...)
 * For some strange reason we need to `chown` the directories with the packages in the VM after deployment (in the ctl scripts) because the files are owned by root
+* Describe the "configuration parameters" of Jenkins in the release
+* Describe the workflow for updating Jenkins (or other tools) in the release and proof that we don't lose config, jobs, plugins...
+* Describe a scenario for a blue-green deployment for updates...
 
 
 
