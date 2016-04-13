@@ -12,8 +12,10 @@ TLDR;
 
 
 
-Basic Concepts of BOSH
-----------------------
+BOSH Fundamentals
+-----------------
+
+Get an full overview of topics on the [Terminology Documenation](http://bosh.io/docs/terminology.html)
 
 ### What is a Stemcell?
 
@@ -37,16 +39,16 @@ A release is a **versioned** collection of
 * binary artifacts
 * ...
 
-to build and deploy software in a reproducible way.
+to **build** and **deploy** software in a reproducible way.
 
 Fundamental elements of a release:
 
-* *Jobs* describes a chunk of work that a release performs
+* *Jobs* describes a chunk of work that a release performs (find further details below)
 * *Packages* provide source code and dependencies to jobs
 * *Source* provides packages the non-binary files they need
 * *Blobs* provides packages the binary files they need
 
-A list of [all releases can be found here](https://bosh.io/releases)
+A list of [all available releases can be found here](https://bosh.io/releases)
 
 ### What is a Deployment?
 
@@ -71,11 +73,19 @@ The deployment manifest describes the deployment in an IaaS-agnostic way, which 
 
 ### What is a Job?
 
-(TODO) Describe the concept of a *Job* in BOSH
+A *job* is part of a release. It contains startup, shutdown scripts, and configuration files that tell the Agent how to start, run and monitor software on a VM. Jobs can depend on packages for necessary software.
 
 ### What is a Package?
 
-(TODO) Describe the concept of a *Package* in BOSH
+A package is part of a release. It contains vendored in sofware source and scripts to compile it. Packages can depend on other packages.
+
+### What is BOSH-Lite?
+
+*BOSH Lite* is a local development environment for BOSH. It uses (lightweight) Warden containers to simulate VMs in a local Vagrant box. All you need to run it is Vagrant and VirtualBox on your developer machine.
+
+### What is VCAP?
+
+*VCAP* stands for VMWare Cloud Application Platform.
 
 
 
@@ -108,6 +118,8 @@ When connecting to BOSH Lite, the credentials will be `admin/admin`.
 
 Create this Release
 -------------------
+
+The most important documentation to read in the BOSH documentation might be [Creating a Release](http://bosh.io/docs/create-release.html).
 
 ### Directory Structure of this Release
 
@@ -311,8 +323,8 @@ If something goes wrong and you want to change things in your release, re-build 
 
 
 
-Useful Tips & Tricks
-====================
+Virtual Machines and Deployments
+================================
 
 Directory Structure of our Deployment
 -------------------------------------
@@ -391,6 +403,17 @@ Here's the directory structure of `/var/vcap/` within our VM / Container:
     │       └── ...
     └── sys -> /var/vcap/data/sys
 
+Find further information about the "layout" of your VMs on the [VM config Docu](http://bosh.io/docs/vm-config.html).
+
+The `vcap` User
+---------------
+
+Pre-configured user that comes with the stemcells. Release jobs may run processes under that user. Default password is `c1oudc0w`.
+
+
+
+Useful Tips & Tricks
+====================
 
 BOSH Commands
 -------------
@@ -464,6 +487,7 @@ The directory `/var/vcap` is created on the job VMs and contains
 * packages within `/var/vcap/packages`
 * src within `/var/vcap/src`
 * blobs within `/var/vcap/blobs`
+
 
 
 Helper Scripts
